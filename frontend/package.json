@@ -1,11 +1,12 @@
 {
-  "name": "fruits-catalog",
+  "name": "fruits-catalog-ui",
   "version": "0.0.1",
   "author": "RH France SA",
   "license": "MIT License",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
+    "start-prod": "ng serve --prod",
     "build": "ng build",
     "build-prod": "ng build --prod --build-optimizer",
     "test": "ng test",
@@ -17,6 +18,7 @@
     "@angular/animations": "^6.0.3",
     "@angular/common": "^6.0.3",
     "@angular/compiler": "^6.0.3",
+    "@angular/cli": "~6.0.8",
     "@angular/core": "^6.0.3",
     "@angular/forms": "^6.0.3",
     "@angular/http": "^6.0.3",
