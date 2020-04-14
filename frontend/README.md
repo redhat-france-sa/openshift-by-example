@@ -20,7 +20,7 @@ found 1957 vulnerabilities (1444 low, 7 moderate, 506 high)
 To run this frontend on your local host:
 
 ```sh
-$ npm start
+$ npm run
 
 > fruits-catalog@0.0.1 start /Users/lbroudou/Development/github/openshift-by-example/frontend
 > ng serve
