@@ -2,7 +2,7 @@ var express = require('express')
 var proxy = require('express-http-proxy');
 var app = express()
 
-app.set('port', (process.env.PORT || 8081))
+app.set('port', (process.env.PORT || 8080))
 app.use(express.static(__dirname + '/dist'))
 
 var backend_service = process.env.BACKEND_SERVICE || undefined
