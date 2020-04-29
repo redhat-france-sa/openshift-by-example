@@ -1,0 +1,95 @@
+kind: DeploymentConfig
+apiVersion: apps.openshift.io/v1
+metadata:
+  name: backend-fruits-catalog
+  labels:
+    app: fruits-catalog
+    app.kubernetes.io/instance: backend
+    app.kubernetes.io/name: java
+    app.kubernetes.io/part-of: fruits-catalog
+    app.openshift.io/runtime-version: '8'
+spec:
+  strategy:
+    type: Rolling
+    rollingParams:
+      updatePeriodSeconds: 1
+      intervalSeconds: 1
+      timeoutSeconds: 600
+      maxUnavailable: 25%
+      maxSurge: 25%
+    resources: {}
+    activeDeadlineSeconds: 21600
+  triggers:
+    - type: ConfigChange
+    - type: ImageChange
+      imageChangeParams:
+        automatic: true
+        containerNames:
+          - backend-fruits-catalog
+        from:
+          kind: ImageStreamTag
+          namespace: fruits-catalog-dev
+          name: 'backend-fruits-catalog:promoteToProd'
+  replicas: 2
+  revisionHistoryLimit: 10
+  test: false
+  selector:
+    deploymentconfig: backend-fruits-catalog
+  template:
+    metadata:
+      labels:
+        deploymentconfig: backend-fruits-catalog
+    spec:
+      volumes:
+        - name: backend-fruits-catalog-s2idata
+          persistentVolumeClaim:
+            claimName: backend-fruits-catalog-s2idata
+        - name: backend-config-volume
+          configMap:
+            name: backend-config
+            defaultMode: 420
+      containers:
+        - resources: {}
+          terminationMessagePath: /dev/termination-log
+          name: backend-fruits-catalog
+          command:
+            - /opt/odo/bin/go-init
+          env:
+            - name: MONGODB_DATABASE_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb
+                  key: database-admin-password
+            - name: MONGODB_DATABASE_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb
+                  key: database-name
+            - name: MONGODB_DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb
+                  key: database-password
+            - name: MONGODB_DATABASE_USER
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb
+                  key: database-user
+          ports:
+            - name: 8080-tcp
+              containerPort: 8080
+              protocol: TCP
+          imagePullPolicy: Always
+          volumeMounts:
+            - name: backend-fruits-catalog-s2idata
+              mountPath: /deployments
+              subPath: deployment
+            - name: backend-config-volume
+              mountPath: /deployments/config
+          terminationMessagePolicy: File
+          image: fruits-catalog-dev/backend-fruits-catalog:promoteToProd'
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 20
+      dnsPolicy: ClusterFirst
+      securityContext: {}
+      schedulerName: default-scheduler

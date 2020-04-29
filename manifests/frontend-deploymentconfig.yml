@@ -1,0 +1,64 @@
+kind: DeploymentConfig
+apiVersion: apps.openshift.io/v1
+metadata:
+  name: frontend
+  labels:
+    app: frontend
+    app.kubernetes.io/component: frontend
+    app.kubernetes.io/instance: frontend
+    app.kubernetes.io/part-of: fruits-catalog
+    app.openshift.io/runtime: nodejs
+spec:
+  strategy:
+    type: Rolling
+    rollingParams:
+      updatePeriodSeconds: 1
+      intervalSeconds: 1
+      timeoutSeconds: 600
+      maxUnavailable: 25%
+      maxSurge: 25%
+    resources: {}
+    activeDeadlineSeconds: 21600
+  triggers:
+    - type: ConfigChange
+    - type: ImageChange
+      imageChangeParams:
+        automatic: true
+        containerNames:
+          - frontend
+        from:
+          kind: ImageStreamTag
+          namespace: fruits-catalog-dev
+          name: 'frontend:promoteToProd'
+  replicas: 1
+  revisionHistoryLimit: 10
+  test: false
+  selector:
+    app.kubernetes.io/part-of: fruits-catalog
+    app.openshift.io/runtime: nodejs
+    deploymentconfig: frontend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/part-of: fruits-catalog
+        app.openshift.io/runtime: nodejs
+        deploymentconfig: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: fruits-catalog-dev/frontend:promoteToProd
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          env:
+            - name: BACKEND_SERVICE
+              value: 'backend-fruits-catalog:8080'
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          imagePullPolicy: Always
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      securityContext: {}
+      schedulerName: default-scheduler
