@@ -25,6 +25,7 @@ import { Component, OnInit } from '@angular/core';
 
 import { Fruit } from '../../models/fruit.model';
 import { FruitsService } from '../../services/fruits.service';
+import { LikeService } from '../../services/like.service';
 
 @Component({
   selector: 'home-page',
@@ -35,8 +36,9 @@ export class HomePageComponent implements OnInit {
 
   fruit: Fruit = new Fruit();
   fruits: Fruit[];
+  lovings: string[] = [];
 
-  constructor(private fruitsSvc: FruitsService) { }
+  constructor(private fruitsSvc: FruitsService, private likeSvc: LikeService) { }
 
   ngOnInit() {
     this.getFruits();
@@ -58,6 +60,41 @@ export class HomePageComponent implements OnInit {
         },
         error: err => {
           alert("Fruit cannot be created (" + err.message + ")");
+        },
+        complete: () => console.log('Observer got a complete notification'),
+      }
+    );
+  }
+
+  isLiked(fruit: Fruit): boolean {
+    if (this.lovings.includes(fruit.id)) {
+      return true;
+    }
+    return false;
+  }
+  likeFruit(fruit: Fruit): void {
+    this.likeSvc.likeFruit(fruit).subscribe(
+      {
+        next: res => {
+          this.lovings.push(fruit.id);
+          alert("Thank you for liking this " + fruit.name + " 😀");
+        },
+        error: err => {
+          alert("Fruit cannot be liked (" + err.message + ")");
+        },
+        complete: () => console.log('Observer got a complete notification'),
+      }
+    );
+  }
+  unlikeFruit(fruit: Fruit): void {
+    this.likeSvc.unlikeFruit(fruit).subscribe(
+      {
+        next: res => {
+          this.lovings.splice(this.lovings.indexOf(fruit.id));
+          alert("Sorry you do not like " + fruit.name + " anymore... 😢");
+        },
+        error: err => {
+          alert("Fruit cannot be unliked (" + err.message + ")");
         },
         complete: () => console.log('Observer got a complete notification'),
       }

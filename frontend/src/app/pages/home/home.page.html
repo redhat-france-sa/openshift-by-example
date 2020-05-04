@@ -1,5 +1,5 @@
-<div class="jumbotron">
-  <h2>Fruits Catalog</h2>
+<div class="jumbotron v2">
+  <h2>Social Fruits Catalog - v2</h2>
   <p>Browse and create fruits within your catalog</p>
 </div>
 <div class="container">
@@ -17,6 +17,7 @@
                 <th>#</th>
                 <th>Name</th>
                 <th>Origin</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -25,6 +26,14 @@
                 <td>{{ fruit.id }}</td>
                 <td>{{ fruit.name }}</td>
                 <td>{{ fruit.origin }}</td>
+                <td>
+                  <span *ngIf="!isLiked(fruit)">
+                    <img src="./assets/love.png" width="28px" heitgh="28px" (click)="likeFruit(fruit)"/>
+                  </span>
+                  <span *ngIf="isLiked(fruit)">
+                    <img src="./assets/loving.png" width="28px" heitgh="28px" (click)="unlikeFruit(fruit)"/>
+                  </span>
+                </td>
               </tr>
             </tbody>
           </table>
