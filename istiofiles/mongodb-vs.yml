@@ -5,8 +5,10 @@ metadata:
 spec:
   hosts:
   - mongodb
-  http:
+  tcp:
   - route:
     - destination:
-        host: mongodb
-        subset: v1
+      host: mongodb
+      port:
+        number: 27017
+      subset: v1

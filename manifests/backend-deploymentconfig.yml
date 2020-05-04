@@ -38,6 +38,7 @@ spec:
   template:
     metadata:
       labels:
+        app: fruits-catalog
         deploymentconfig: backend-fruits-catalog
     spec:
       volumes:
