@@ -9,10 +9,27 @@ var backend_service = process.env.BACKEND_SERVICE || undefined
 if (backend_service == undefined) {
   console.error("CONFIG ERROR: Can't find backend service config! \nDefine `BACKEND_SERVICE` env variable.")
 } else {
-  console.info("Backend service defined at `" + backend_service + "`. Proxying all request to /api/*")
-  app.use('/api', proxy(backend_service, {
+  console.info("Backend service defined at `" + backend_service + "`. Proxying all request to /api/fruits/*")
+  app.use('/api/fruits', proxy(backend_service, {
     proxyReqPathResolver: function (req) {
-      return '/api' + req.url
+      return '/api/fruits' + req.url
+    }})
+  );
+}
+
+var like_service = process.env.LIKE_SERVICE || undefined
+if (like_service == undefined) {
+  console.error("CONFIG ERROR: Can't find like service config! \nDefine `LIKE_SERVICE` env variable.")
+} else {
+  console.info("Like service defined at `" + like_service + "`. Proxying all request to /api/[like|unlike]/*")
+  app.use('/api/like', proxy(like_service, {
+    proxyReqPathResolver: function (req) {
+      return '/api/like' + req.url
+    }})
+  );
+  app.use('/api/unlike', proxy(like_service, {
+    proxyReqPathResolver: function (req) {
+      return '/api/unlike' + req.url
     }})
   );
 }
