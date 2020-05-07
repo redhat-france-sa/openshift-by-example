@@ -1,0 +1,444 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+labels:
+  template: fruits-catalog-prod
+  app: fruits-catalog
+message: |-
+  The following service(s) have been created in your project: ${DATABASE_SERVICE_NAME}.
+
+         Username: ${MONGODB_USER}
+         Password: ${MONGODB_PASSWORD}
+    Database Name: ${MONGODB_DATABASE}
+   Connection URL: mongodb://${MONGODB_USER}:${MONGODB_PASSWORD}@${DATABASE_SERVICE_NAME}/${MONGODB_DATABASE}
+
+  For more information about using this template, including OpenShift considerations, see documentation in the upstream repository: https://github.com/sclorg/mongodb-container.
+metadata:
+  annotations:
+    description: |-
+      MongoDB database service, with persistent storage. For more information about using this template, including OpenShift considerations, see documentation in the upstream repository: https://github.com/sclorg/mongodb-container.
+
+      NOTE: Scaling to more than one replica is not supported. You must have persistent volumes available in your cluster to use this template.
+    iconClass: icon-mongodb
+    openshift.io/display-name: MongoDB
+    openshift.io/documentation-url: https://docs.okd.io/latest/using_images/db_images/mongodb.html
+    openshift.io/long-description: This template provides a standalone MongoDB server
+      with a database created.  The database is stored on persistent storage.  The
+      database name, username, and password are chosen via parameters when provisioning
+      this service.
+    openshift.io/provider-display-name: Red Hat, Inc.
+    openshift.io/support-url: https://access.redhat.com
+    samples.operator.openshift.io/version: 4.4.3
+    tags: database,mongodb
+  creationTimestamp: "2020-04-23T23:26:04Z"
+  labels:
+    samples.operator.openshift.io/managed: "true"
+  name: mongodb-persistent
+  namespace: openshift
+  resourceVersion: "1449573"
+  selfLink: /apis/template.openshift.io/v1/namespaces/openshift/templates/mongodb-persistent
+  uid: e96c3ef0-aa13-433e-b44a-cbb85d17cb81
+objects:
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    annotations:
+      template.openshift.io/expose-admin_password: '{.data[''database-admin-password'']}'
+      template.openshift.io/expose-database_name: '{.data[''database-name'']}'
+      template.openshift.io/expose-password: '{.data[''database-password'']}'
+      template.openshift.io/expose-username: '{.data[''database-user'']}'
+    name: ${DATABASE_SERVICE_NAME}
+  stringData:
+    database-admin-password: ${MONGODB_ADMIN_PASSWORD}
+    database-name: ${MONGODB_DATABASE}
+    database-password: ${MONGODB_PASSWORD}
+    database-user: ${MONGODB_USER}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      template.openshift.io/expose-uri: mongodb://{.spec.clusterIP}:{.spec.ports[?(.name=="mongo")].port}
+    name: ${DATABASE_SERVICE_NAME}
+  spec:
+    ports:
+    - name: mongo
+      nodePort: 0
+      port: 27017
+      protocol: TCP
+      targetPort: 27017
+    selector:
+      name: ${DATABASE_SERVICE_NAME}
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: PersistentVolumeClaim
+  metadata:
+    name: ${DATABASE_SERVICE_NAME}
+  spec:
+    accessModes:
+    - ReadWriteOnce
+    resources:
+      requests:
+        storage: ${VOLUME_CAPACITY}
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    annotations:
+      template.alpha.openshift.io/wait-for-ready: "true"
+    name: ${DATABASE_SERVICE_NAME}
+  spec:
+    replicas: 1
+    selector:
+      name: ${DATABASE_SERVICE_NAME}
+    strategy:
+      type: Recreate
+    template:
+      metadata:
+        labels:
+          name: ${DATABASE_SERVICE_NAME}
+      spec:
+        containers:
+        - capabilities: {}
+          env:
+          - name: MONGODB_USER
+            valueFrom:
+              secretKeyRef:
+                key: database-user
+                name: ${DATABASE_SERVICE_NAME}
+          - name: MONGODB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                key: database-password
+                name: ${DATABASE_SERVICE_NAME}
+          - name: MONGODB_ADMIN_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                key: database-admin-password
+                name: ${DATABASE_SERVICE_NAME}
+          - name: MONGODB_DATABASE
+            valueFrom:
+              secretKeyRef:
+                key: database-name
+                name: ${DATABASE_SERVICE_NAME}
+          image: ' '
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            initialDelaySeconds: 30
+            tcpSocket:
+              port: 27017
+            timeoutSeconds: 1
+          name: mongodb
+          ports:
+          - containerPort: 27017
+            protocol: TCP
+          readinessProbe:
+            exec:
+              command:
+              - /bin/sh
+              - -i
+              - -c
+              - mongo 127.0.0.1:27017/$MONGODB_DATABASE -u $MONGODB_USER -p $MONGODB_PASSWORD
+                --eval="quit()"
+            initialDelaySeconds: 3
+            timeoutSeconds: 1
+          resources:
+            limits:
+              memory: ${MEMORY_LIMIT}
+          securityContext:
+            capabilities: {}
+            privileged: false
+          terminationMessagePath: /dev/termination-log
+          volumeMounts:
+          - mountPath: /var/lib/mongodb/data
+            name: ${DATABASE_SERVICE_NAME}-data
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        volumes:
+        - name: ${DATABASE_SERVICE_NAME}-data
+          persistentVolumeClaim:
+            claimName: ${DATABASE_SERVICE_NAME}
+    triggers:
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - mongodb
+        from:
+          kind: ImageStreamTag
+          name: mongodb:${MONGODB_VERSION}
+          namespace: ${NAMESPACE}
+        lastTriggeredImage: ""
+      type: ImageChange
+    - type: ConfigChange
+- kind: ConfigMap
+  apiVersion: v1
+  metadata:
+    name: backend-config
+    labels:
+      app: fruits-catalog
+      deployment: backend
+  data:
+    application.yml: |-
+      spring.data.mongodb.uri: mongodb://${MONGODB_DATABASE_USER}:${MONGODB_DATABASE_PASSWORD}@mongodb:27017/sampledb
+- kind: DeploymentConfig
+  apiVersion: apps.openshift.io/v1
+  metadata:
+    name: backend-fruits-catalog
+    labels:
+      app: fruits-catalog
+      app.kubernetes.io/instance: backend
+      app.kubernetes.io/name: java
+      app.kubernetes.io/part-of: fruits-catalog
+      app.openshift.io/runtime-version: '8'
+  spec:
+    strategy:
+      type: Rolling
+      rollingParams:
+        updatePeriodSeconds: 1
+        intervalSeconds: 1
+        timeoutSeconds: 600
+        maxUnavailable: 25%
+        maxSurge: 25%
+      resources: {}
+      activeDeadlineSeconds: 21600
+    triggers:
+      - type: ConfigChange
+      - type: ImageChange
+        imageChangeParams:
+          automatic: true
+          containerNames:
+            - backend-fruits-catalog
+          from:
+            kind: ImageStreamTag
+            namespace: fruits-catalog-dev
+            name: 'backend-fruits-catalog:promoteToProd'
+    replicas: 2
+    revisionHistoryLimit: 10
+    test: false
+    selector:
+      deploymentconfig: backend-fruits-catalog
+    template:
+      metadata:
+        labels:
+          app: fruits-catalog
+          deploymentconfig: backend-fruits-catalog
+      spec:
+        volumes:
+          - name: backend-fruits-catalog-s2idata
+            persistentVolumeClaim:
+              claimName: backend-fruits-catalog-s2idata
+          - name: backend-config-volume
+            configMap:
+              name: backend-config
+              defaultMode: 420
+        containers:
+          - resources: {}
+            terminationMessagePath: /dev/termination-log
+            name: backend-fruits-catalog
+            env:
+              - name: MONGODB_DATABASE_ADMIN_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: mongodb
+                    key: database-admin-password
+              - name: MONGODB_DATABASE_NAME
+                valueFrom:
+                  secretKeyRef:
+                    name: mongodb
+                    key: database-name
+              - name: MONGODB_DATABASE_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: mongodb
+                    key: database-password
+              - name: MONGODB_DATABASE_USER
+                valueFrom:
+                  secretKeyRef:
+                    name: mongodb
+                    key: database-user
+            ports:
+              - name: 8080-tcp
+                containerPort: 8080
+                protocol: TCP
+            imagePullPolicy: Always
+            volumeMounts:
+              - name: backend-config-volume
+                mountPath: /deployments/config
+            terminationMessagePolicy: File
+            image: fruits-catalog-dev/backend-fruits-catalog:promoteToProd'
+        restartPolicy: Always
+        terminationGracePeriodSeconds: 20
+        dnsPolicy: ClusterFirst
+        securityContext: {}
+        schedulerName: default-scheduler
+- kind: Service
+  apiVersion: v1
+  metadata:
+    name: backend-fruits-catalog
+    labels:
+      app: fruits-catalog
+      app.kubernetes.io/instance: backend
+      app.kubernetes.io/part-of: fruits-catalog
+  spec:
+    ports:
+      - name: 8080-tcp
+        protocol: TCP
+        port: 8080
+        targetPort: 8080
+    selector:
+      deploymentconfig: backend-fruits-catalog
+    type: ClusterIP
+    sessionAffinity: None
+- kind: DeploymentConfig
+  apiVersion: apps.openshift.io/v1
+  metadata:
+    name: frontend
+    labels:
+      app: frontend
+      app.kubernetes.io/component: frontend
+      app.kubernetes.io/instance: frontend
+      app.kubernetes.io/part-of: fruits-catalog
+      app.openshift.io/runtime: nodejs
+  spec:
+    strategy:
+      type: Rolling
+      rollingParams:
+        updatePeriodSeconds: 1
+        intervalSeconds: 1
+        timeoutSeconds: 600
+        maxUnavailable: 25%
+        maxSurge: 25%
+      resources: {}
+      activeDeadlineSeconds: 21600
+    triggers:
+      - type: ConfigChange
+      - type: ImageChange
+        imageChangeParams:
+          automatic: true
+          containerNames:
+            - frontend
+          from:
+            kind: ImageStreamTag
+            namespace: fruits-catalog-dev
+            name: 'frontend:promoteToProd'
+    replicas: 1
+    revisionHistoryLimit: 10
+    test: false
+    selector:
+      app.kubernetes.io/part-of: fruits-catalog
+      app.openshift.io/runtime: nodejs
+      deploymentconfig: frontend
+    template:
+      metadata:
+        labels:
+          app.kubernetes.io/part-of: fruits-catalog
+          app.openshift.io/runtime: nodejs
+          deploymentconfig: frontend
+      spec:
+        containers:
+          - name: frontend
+            image: fruits-catalog-dev/frontend:promoteToProd
+            ports:
+              - containerPort: 8080
+                protocol: TCP
+            env:
+              - name: BACKEND_SERVICE
+                value: 'backend-fruits-catalog:8080'
+            resources: {}
+            terminationMessagePath: /dev/termination-log
+            terminationMessagePolicy: File
+            imagePullPolicy: Always
+        restartPolicy: Always
+        terminationGracePeriodSeconds: 30
+        dnsPolicy: ClusterFirst
+        securityContext: {}
+        schedulerName: default-scheduler
+- kind: Service
+  apiVersion: v1
+  metadata:
+    name: frontend
+    labels:
+      app: frontend
+      app.kubernetes.io/component: frontend
+      app.kubernetes.io/instance: frontend
+      app.kubernetes.io/part-of: fruits-catalog
+      app.openshift.io/runtime: nodejs
+  spec:
+    ports:
+      - name: 8080-tcp
+        protocol: TCP
+        port: 8080
+        targetPort: 8080
+    selector:
+      app.kubernetes.io/part-of: fruits-catalog
+      app.openshift.io/runtime: nodejs
+      deploymentconfig: frontend
+    type: ClusterIP
+    sessionAffinity: None
+  
+- kind: Route
+  apiVersion: route.openshift.io/v1
+  metadata:
+    name: frontend
+    labels:
+      app: frontend
+      app.kubernetes.io/component: frontend
+      app.kubernetes.io/instance: frontend
+      app.kubernetes.io/part-of: fruits-catalog
+      app.openshift.io/runtime: nodejs
+  spec:
+    to:
+      kind: Service
+      name: frontend
+      weight: 100
+    port:
+      targetPort: 8080-tcp
+    wildcardPolicy: None
+parameters:
+- description: Maximum amount of memory the container can use.
+  displayName: Memory Limit
+  name: MEMORY_LIMIT
+  required: true
+  value: 512Mi
+- description: The OpenShift Namespace where the ImageStream resides.
+  displayName: Namespace
+  name: NAMESPACE
+  value: openshift
+- description: The name of the OpenShift Service exposed for the database.
+  displayName: Database Service Name
+  name: DATABASE_SERVICE_NAME
+  required: true
+  value: mongodb
+- description: Username for MongoDB user that will be used for accessing the database.
+  displayName: MongoDB Connection Username
+  from: user[A-Z0-9]{3}
+  generate: expression
+  name: MONGODB_USER
+  required: true
+- description: Password for the MongoDB connection user.
+  displayName: MongoDB Connection Password
+  from: '[a-zA-Z0-9]{16}'
+  generate: expression
+  name: MONGODB_PASSWORD
+  required: true
+- description: Name of the MongoDB database accessed.
+  displayName: MongoDB Database Name
+  name: MONGODB_DATABASE
+  required: true
+  value: sampledb
+- description: Password for the database admin user.
+  displayName: MongoDB Admin Password
+  from: '[a-zA-Z0-9]{16}'
+  generate: expression
+  name: MONGODB_ADMIN_PASSWORD
+  required: true
+- description: Volume space available for data, e.g. 512Mi, 2Gi.
+  displayName: Volume Capacity
+  name: VOLUME_CAPACITY
+  required: true
+  value: 1Gi
+- description: Version of MongoDB image to be used (3.6 or latest).
+  displayName: Version of MongoDB Image
+  name: MONGODB_VERSION
+  required: true
+  value: "3.6"
