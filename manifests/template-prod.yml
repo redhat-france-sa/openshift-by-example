@@ -224,9 +224,6 @@ objects:
           deploymentconfig: backend-fruits-catalog
       spec:
         volumes:
-          - name: backend-fruits-catalog-s2idata
-            persistentVolumeClaim:
-              claimName: backend-fruits-catalog-s2idata
           - name: backend-config-volume
             configMap:
               name: backend-config
