@@ -8,8 +8,9 @@
 oc create -f operators-subscriptions.yaml
 
 # Prepare projects to allow recopy of operators before waiting.
-oc new-project istio-system
 oc new-project knative-serving
+oc new-project istio-system
+
 
 # Wait a moment to allow operators to startup.
 echo "Waiting a moment before pursuing..."
