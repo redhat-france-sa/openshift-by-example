@@ -1,0 +1,11 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: fruits-lover
+spec:
+  template:
+    spec:
+      containerConcurrency: 0
+      containers:
+      - image: sebi2706/fruits-lover:latest
+
