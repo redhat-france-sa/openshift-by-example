@@ -7,5 +7,5 @@ spec:
     spec:
       containerConcurrency: 0
       containers:
-      - image: sebi2706/fruits-lover:latest
+      - image: quay.io/rhdevelopers/fruits-lover:latest
 
