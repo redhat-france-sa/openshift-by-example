@@ -1,0 +1,18 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: backend-fruits-catalog
+  labels:
+    app: fruits-catalog
+    app.kubernetes.io/instance: backend
+    app.kubernetes.io/part-of: fruits-catalog
+spec:
+  ports:
+    - name: 8080-tcp
+      protocol: TCP
+      port: 8080
+      targetPort: 8080
+  selector:
+    deploymentconfig: backend-fruits-catalog
+  type: ClusterIP
+  sessionAffinity: None

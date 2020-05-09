@@ -38,6 +38,7 @@ spec:
   template:
     metadata:
       labels:
+        app: fruits-catalog
         deploymentconfig: backend-fruits-catalog
     spec:
       volumes:
@@ -52,8 +53,6 @@ spec:
         - resources: {}
           terminationMessagePath: /dev/termination-log
           name: backend-fruits-catalog
-          command:
-            - /opt/odo/bin/go-init
           env:
             - name: MONGODB_DATABASE_ADMIN_PASSWORD
               valueFrom:
@@ -81,9 +80,6 @@ spec:
               protocol: TCP
           imagePullPolicy: Always
           volumeMounts:
-            - name: backend-fruits-catalog-s2idata
-              mountPath: /deployments
-              subPath: deployment
             - name: backend-config-volume
               mountPath: /deployments/config
           terminationMessagePolicy: File
