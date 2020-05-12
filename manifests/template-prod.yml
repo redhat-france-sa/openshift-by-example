@@ -391,6 +391,57 @@ objects:
     port:
       targetPort: 8080-tcp
     wildcardPolicy: None
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  labels:
+    app: fruits-catalog
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/instance: backend
+  name: backend
+  namespace: fruits-catalog-dev
+spec:
+  failedBuildsHistoryLimit: 5
+  nodeSelector: null
+  output:
+    to:
+      kind: ImageStreamTag
+      name: backend:latest
+  runPolicy: Serial
+  source:
+    contextDir: backend
+    git:
+      uri: https://github.com/redhat-france-sa/openshift-by-example.git
+    type: Git
+  strategy:
+    sourceStrategy:
+      from:
+        kind: ImageStreamTag
+        name: java:8
+        namespace: openshift
+    type: Source
+  successfulBuildsHistoryLimit: 5
+  triggers:
+  - github:
+      secret: KUxM5Nbhy7crkCWZ6u_U
+    type: GitHub
+  - generic:
+      secret: hT2eDTbkT6o7oJSlMtQJ
+    type: Generic
+  - type: ConfigChange
+---
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  labels:
+    app: fruits-catalog
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/instance: backend
+  name: backend
+  namespace: fruits-catalog-dev
+spec:
+  lookupPolicy:
+    local: false    
 parameters:
 - description: Maximum amount of memory the container can use.
   displayName: Memory Limit
