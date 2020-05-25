@@ -1,0 +1,64 @@
+apiVersion: v1
+items:
+- apiVersion: integreatly.org/v1alpha1
+  kind: Grafana
+  metadata:
+    name: example-grafana
+  spec:
+    adminPassword: ""
+    adminUser: ""
+    anonymous: false
+    basicAuth: false
+    config:
+      alerting: {}
+      analytics: {}
+      auth:
+        disable_signout_menu: true
+      auth.anonymous:
+        enabled: true
+      auth.basic: {}
+      auth.generic_oauth: {}
+      auth.github: {}
+      auth.google: {}
+      auth.ldap: {}
+      auth.proxy: {}
+      dashboards: {}
+      database: {}
+      dataproxy: {}
+      external_image_storage: {}
+      external_image_storage.azure_blob: {}
+      external_image_storage.gcs: {}
+      external_image_storage.s3: {}
+      external_image_storage.webdav: {}
+      log:
+        level: warn
+        mode: console
+      metrics: {}
+      metrics.graphite: {}
+      panels: {}
+      paths: {}
+      plugins: {}
+      remote_cache: {}
+      security:
+        admin_password: secret
+        admin_user: root
+      server: {}
+      smtp: {}
+      snapshots: {}
+      users: {}
+    dashboardLabelSelector:
+    - matchExpressions:
+      - key: app
+        operator: In
+        values:
+        - grafana
+    disableLoginForm: false
+    disableSignoutMenu: false
+    ingress:
+      enabled: true
+    logLevel: ""
+    service: {}
+kind: List
+metadata:
+  resourceVersion: ""
+  selfLink: ""

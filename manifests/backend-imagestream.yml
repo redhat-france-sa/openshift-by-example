@@ -1,0 +1,11 @@
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  labels:
+    app: fruits-catalog
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/instance: backend
+  name: backend
+spec:
+  lookupPolicy:
+    local: false

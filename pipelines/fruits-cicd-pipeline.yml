@@ -1,0 +1,96 @@
+kind: BuildConfig
+apiVersion: build.openshift.io/v1
+metadata:
+  name: fruits-cicd-pipeline
+spec:
+  nodeSelector: {}
+  output: {}
+  resources: {}
+  successfulBuildsHistoryLimit: 5
+  failedBuildsHistoryLimit: 5
+  strategy:
+    type: JenkinsPipeline
+    jenkinsPipelineStrategy:
+      jenkinsfile: >-
+
+        // NOTE, the "pipeline" directive/closure from the declarative pipeline
+        syntax needs to include, or be nested outside,
+
+        // and "openshift" directive/closure from the OpenShift Client Plugin
+        for Jenkins.  Otherwise, the declarative pipeline engine
+
+        // will not be fully engaged.
+
+        pipeline {
+            agent {
+              node {
+                // This will speed up the start of the pipeline, instead of using a dedicated nodejs slave
+                label 'master'
+              }
+            }
+            options {
+                // set a timeout of 20 minutes for this pipeline
+                timeout(time: 40, unit: 'MINUTES')
+            }
+
+            stages {
+                stage('Build') {
+                    steps {
+                        script {
+                            openshift.withCluster() {
+                                openshift.withProject() {
+                                  parallel(
+                                     frontend: {
+                                        openshift.startBuild("frontend").logs('-f')
+
+                                      },
+                                      backend: {
+                                        openshift.startBuild("backend").logs('-f')
+                                      }
+                                    )
+                                }
+                            }
+                        } // script
+                    } // steps
+                } // stage
+                
+                stage('deploy to DEV') {
+                    steps {
+                        script {
+                            openshift.withCluster() {
+                                openshift.withProject() {
+                                    // dcs will contain our 2 deploymentConfigs
+                                    def dcs = openshift.selector( [ 'dc/frontend', 'dc/backend-fruits-catalog'])
+
+                                    // We want to make sure that each pod is 'Running' before moving forward
+                                    dcs.withEach {
+                                      it.related('pods').untilEach(1) {
+                                        return (it.object().status.phase == "Running")
+                                      }
+                                    }
+                                }
+                            }
+                        } // script
+                    } // steps
+                } // stage
+                stage('deploy to PROD') {
+                    steps {
+                        script {
+                            openshift.withCluster() {
+                                openshift.withProject() {
+                                  //By tagging the images with "promoteToProd, OpenShift will deploy these versions into PROD environment"
+                                  openshift.tag("fruits-catalog-dev/frontend:latest", "fruits-catalog-dev/frontend:promoteToProd")
+                                  openshift.tag("fruits-catalog-dev/backend:latest", "fruits-catalog-dev/backend:promoteToProd")
+                                }
+                            }
+                        } // script
+                    } // steps
+                } // stage
+                
+            } // stages
+        } // pipeline
+  postCommit: {}
+  source:
+    type: None
+  triggers: []
+  runPolicy: Serial

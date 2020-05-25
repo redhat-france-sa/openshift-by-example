@@ -1,0 +1,16 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  annotations:
+    openshift.io/host.generated: "true"
+  labels:
+    operated-prometheus: "true"
+  name: prometheus
+spec:
+  port:
+    targetPort: web
+  to:
+    kind: Service
+    name: prometheus-operated
+    weight: 100
+  wildcardPolicy: None

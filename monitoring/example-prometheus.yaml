@@ -1,0 +1,23 @@
+apiVersion: v1
+items:
+- apiVersion: monitoring.coreos.com/v1
+  kind: Prometheus
+  metadata:
+    labels:
+      prometheus: k8s
+    name: example
+  spec:
+    alerting:
+      alertmanagers:
+      - name: alertmanager-main
+        namespace: openshift-monitoring
+        port: web
+    replicas: 1
+    ruleSelector: {}
+    securityContext: {}
+    serviceAccountName: prometheus-k8s
+    serviceMonitorSelector: {}
+kind: List
+metadata:
+  resourceVersion: ""
+  selfLink: ""

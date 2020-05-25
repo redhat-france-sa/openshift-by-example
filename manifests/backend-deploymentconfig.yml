@@ -29,7 +29,7 @@ spec:
         from:
           kind: ImageStreamTag
           namespace: fruits-catalog-dev
-          name: 'backend-fruits-catalog:promoteToProd'
+          name: 'backend:promoteToProd'
   replicas: 2
   revisionHistoryLimit: 10
   test: false
@@ -42,9 +42,6 @@ spec:
         deploymentconfig: backend-fruits-catalog
     spec:
       volumes:
-        - name: backend-fruits-catalog-s2idata
-          persistentVolumeClaim:
-            claimName: backend-fruits-catalog-s2idata
         - name: backend-config-volume
           configMap:
             name: backend-config
