@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: frontend
+    version: v2
+    app.kubernetes.io/part-of: fruits-catalog
+  name: frontend-v2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+      version: v2
+  template:
+    metadata:
+      labels:
+        app: frontend
+        version: v2
+        app.kubernetes.io/part-of: fruits-catalog
+        app.openshift.io/runtime: nodejs
+        deploymentconfig: frontend
+      annotations:
+        sidecar.istio.io/inject: "true"
+    spec:
+      containers:
+      - name: frontend
+        image: quay.io/rhdevelopers/fruit-front:v2
+        imagePullPolicy: IfNotPresent
+        env:
+          - name: BACKEND_SERVICE
+            value: "backend-fruits-catalog:8080"
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
