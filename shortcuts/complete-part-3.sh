@@ -18,4 +18,4 @@ oc create -f pipelines/fruits-cicd-pipeline.yml -n fruits-catalog-dev
 oc create -f manifests/template-prod.yml
 oc process fruits-catalog-prod -n fruits-catalog-prod | oc create -f - -n fruits-catalog-prod
 
-oc start-build fruits-cicd-pipeline
+oc start-build fruits-cicd-pipeline -n fruits-catalog-dev
