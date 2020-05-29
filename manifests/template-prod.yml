@@ -325,6 +325,8 @@ objects:
           app.kubernetes.io/part-of: fruits-catalog
           app.openshift.io/runtime: nodejs
           deploymentconfig: frontend
+          app: frontend
+          version: v1
       spec:
         containers:
           - name: frontend
