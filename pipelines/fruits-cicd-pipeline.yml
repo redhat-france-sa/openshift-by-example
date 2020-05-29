@@ -29,7 +29,7 @@ spec:
               }
             }
             options {
-                // set a timeout of 20 minutes for this pipeline
+                // set a timeout of 40 minutes for this pipeline
                 timeout(time: 40, unit: 'MINUTES')
             }
 
